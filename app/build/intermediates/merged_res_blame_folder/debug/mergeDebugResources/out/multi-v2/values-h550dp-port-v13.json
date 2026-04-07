@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.salm.superkasali.app-mergeDebugResources-33:/values-h550dp-port-v13/values-h550dp-port-v13.xml",
+            "map": [
+                {
+                    "source": "/Users/mukremincakmak/.gradle/caches/8.14/transforms/6f0b6ec5d57a9da874bf3dd41ccbcbee/transformed/material-1.12.0/res/values-h550dp-port-v13/values-h550dp-port-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "64",
+                        "endOffsets": "115"
+                    }
+                }
+            ]
+        }
+    ]
+}

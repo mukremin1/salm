@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="background">#FDF6E3</color>
+    <color name="primary">#D35400</color>
+    <color name="primary_dark">#8B4513</color>
+    <color name="secondary">#E67E22</color>
+    <string name="app_name">Super Kasali</string>
+    <style name="Theme.SuperKasali" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#D35400</item>
+        <item name="colorPrimaryVariant">#8B4513</item>
+        <item name="colorSecondary">#E67E22</item>
+        <item name="android:statusBarColor">#8B4513</item>
+        <item name="android:navigationBarColor">#FDF6E3</item>
+        <item name="android:windowLightStatusBar" ns1:targetApi="m">false</item>
+    </style>
+</resources>

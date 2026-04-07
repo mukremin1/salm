@@ -1,0 +1,3536 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Süper Kasalı - Market Simülasyonu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E67E22;
+            --primary-dark: #D35400;
+            --secondary: #8B4513;
+            --bg: #FDF6E3;
+            --bg-dark: #F5E6C8;
+            --success: #27AE60;
+            --warning: #F39C12;
+            --danger: #E74C3C;
+            --text: #2C3E50;
+            --cream: #FFFAF0;
+            --gold: #F1C40F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(230, 126, 34, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary-dark) 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--warning), var(--gold));
+        }
+
+        .logo {
+            font-family: 'Press Start 2P', cursive;
+            color: var(--cream);
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: white;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Level Progress */
+        .level-progress-container {
+            background: rgba(0,0,0,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            min-width: 200px;
+        }
+
+        .level-text {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--gold));
+            transition: width 0.5s ease;
+            border-radius: 5px;
+        }
+
+        /* Main Game Area */
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Panels */
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.15);
+            border: 3px solid var(--bg-dark);
+        }
+
+        .panel-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px dashed var(--bg-dark);
+        }
+
+        /* Customer Panel */
+        .customer-area {
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .customer-area.is-arriving .customer-avatar {
+            animation: customerArrive 0.7s ease, walkBounce 1.1s ease-in-out 0.7s infinite;
+        }
+
+        .customer-avatar {
+            width: 130px;
+            height: 130px;
+            background: linear-gradient(180deg, #ffe5bb 0%, #ffc368 100%);
+            border-radius: 30px;
+            margin-bottom: 1rem;
+            box-shadow: 0 12px 30px rgba(230, 126, 34, 0.28);
+            animation: walkBounce 1.1s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .customer-card-bg {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 40%), var(--shirt-color, #9b5de5);
+            opacity: 0.3;
+        }
+
+        .customer-face {
+            position: relative;
+            width: 84px;
+            height: 96px;
+            border-radius: 42px 42px 36px 36px;
+            background: var(--skin-color, #f1c27d);
+            margin-bottom: 10px;
+            box-shadow: inset 0 -6px 0 rgba(0,0,0,0.05);
+        }
+
+        .customer-hair {
+            position: absolute;
+            top: -4px;
+            left: 6px;
+            right: 6px;
+            height: 34px;
+            background: var(--hair-color, #3f2a1d);
+            border-radius: 28px 28px 12px 12px;
+        }
+
+        .customer-hair.short {
+            height: 28px;
+        }
+
+        .customer-hair.long {
+            height: 42px;
+            left: 0;
+            right: 0;
+            border-radius: 30px 30px 18px 18px;
+        }
+
+        .customer-hair.bob {
+            height: 38px;
+            left: 2px;
+            right: 2px;
+            border-radius: 28px 28px 24px 24px;
+        }
+
+        .customer-hair.curly {
+            height: 34px;
+            left: 2px;
+            right: 2px;
+            border-radius: 30px;
+            box-shadow:
+                -10px 8px 0 0 var(--hair-color, #3f2a1d),
+                10px 8px 0 0 var(--hair-color, #3f2a1d);
+        }
+
+        .customer-hair.ponytail {
+            height: 34px;
+            border-radius: 28px 28px 10px 10px;
+        }
+
+        .customer-hair.ponytail::after {
+            content: '';
+            position: absolute;
+            right: -4px;
+            top: 12px;
+            width: 18px;
+            height: 28px;
+            background: var(--hair-color, #3f2a1d);
+            border-radius: 12px 12px 16px 16px;
+        }
+
+        .customer-eye {
+            position: absolute;
+            top: 42px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2f241c;
+        }
+
+        .customer-eye.left {
+            left: 23px;
+        }
+
+        .customer-eye.right {
+            right: 23px;
+        }
+
+        .customer-mouth {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            width: 22px;
+            height: 10px;
+            border-bottom: 3px solid #874f42;
+            border-radius: 0 0 18px 18px;
+            transform: translateX(-50%);
+        }
+
+        .customer-lashes {
+            position: absolute;
+            top: 36px;
+            left: 16px;
+            right: 16px;
+            height: 8px;
+        }
+
+        .customer-lashes::before,
+        .customer-lashes::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 6px;
+            border-top: 2px solid #2f241c;
+            border-radius: 10px;
+        }
+
+        .customer-lashes::before {
+            left: 0;
+            transform: rotate(-12deg);
+        }
+
+        .customer-lashes::after {
+            right: 0;
+            transform: rotate(12deg);
+        }
+
+        .customer-glasses {
+            position: absolute;
+            top: 36px;
+            left: 14px;
+            right: 14px;
+            height: 14px;
+            border-top: 2px solid #40352e;
+        }
+
+        .customer-glasses::before,
+        .customer-glasses::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            width: 18px;
+            height: 14px;
+            border: 2px solid #40352e;
+            border-radius: 8px;
+        }
+
+        .customer-glasses::before {
+            left: 0;
+        }
+
+        .customer-glasses::after {
+            right: 0;
+        }
+
+        .customer-mustache {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            width: 28px;
+            height: 8px;
+            background: var(--hair-color, #3f2a1d);
+            border-radius: 10px;
+            transform: translateX(-50%);
+            opacity: 0.85;
+        }
+
+        .customer-beard {
+            position: absolute;
+            left: 50%;
+            bottom: 10px;
+            width: 34px;
+            height: 18px;
+            background: var(--hair-color, #3f2a1d);
+            border-radius: 0 0 16px 16px;
+            transform: translateX(-50%);
+            opacity: 0.9;
+        }
+
+        .customer-earring {
+            position: absolute;
+            top: 52px;
+            width: 8px;
+            height: 8px;
+            border: 2px solid #f1c40f;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.35);
+        }
+
+        .customer-earring.left {
+            left: -5px;
+        }
+
+        .customer-earring.right {
+            right: -5px;
+        }
+
+        .customer-shirt {
+            position: absolute;
+            left: 50%;
+            bottom: -12px;
+            width: 108px;
+            height: 54px;
+            background: var(--shirt-color, #5b8def);
+            border-radius: 34px 34px 0 0;
+            transform: translateX(-50%);
+        }
+
+        .customer-arm,
+        .customer-leg {
+            position: absolute;
+            background: var(--skin-color, #f1c27d);
+            transform-origin: top center;
+        }
+
+        .customer-arm {
+            top: 66px;
+            width: 12px;
+            height: 42px;
+            border-radius: 12px;
+            z-index: 0;
+        }
+
+        .customer-arm.left {
+            left: 16px;
+            animation: armSwingLeft 0.9s ease-in-out infinite;
+        }
+
+        .customer-arm.right {
+            right: 16px;
+            animation: armSwingRight 0.9s ease-in-out infinite;
+        }
+
+        .customer-leg {
+            bottom: -8px;
+            width: 14px;
+            height: 34px;
+            border-radius: 12px;
+            z-index: 0;
+        }
+
+        .customer-leg.left {
+            left: 42px;
+            animation: legSwingLeft 0.9s ease-in-out infinite;
+        }
+
+        .customer-leg.right {
+            right: 42px;
+            animation: legSwingRight 0.9s ease-in-out infinite;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes customerArrive {
+            0% { transform: translateX(-46px) scale(0.94); opacity: 0; }
+            65% { transform: translateX(8px) scale(1.02); opacity: 1; }
+            100% { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes walkBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes armSwingLeft {
+            0%, 100% { transform: rotate(18deg); }
+            50% { transform: rotate(-14deg); }
+        }
+
+        @keyframes armSwingRight {
+            0%, 100% { transform: rotate(-18deg); }
+            50% { transform: rotate(14deg); }
+        }
+
+        @keyframes legSwingLeft {
+            0%, 100% { transform: rotate(12deg); }
+            50% { transform: rotate(-10deg); }
+        }
+
+        @keyframes legSwingRight {
+            0%, 100% { transform: rotate(-12deg); }
+            50% { transform: rotate(10deg); }
+        }
+
+        .customer-info {
+            background: var(--bg);
+            padding: 0.8rem;
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .customer-name {
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .customer-order {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .customer-status {
+            margin-top: 0.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            justify-content: center;
+        }
+
+        .status-pill {
+            padding: 0.28rem 0.55rem;
+            border-radius: 999px;
+            background: white;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--secondary);
+            border: 1px solid rgba(139, 69, 19, 0.12);
+        }
+
+        .cashier-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #fff5e7 0%, #fde1ba 100%);
+            border: 2px solid var(--bg-dark);
+            margin-bottom: 1rem;
+        }
+
+        .cashier-avatar {
+            width: 110px;
+            height: 110px;
+            background: linear-gradient(180deg, #ffe7c4 0%, #ffcc84 100%);
+            border-radius: 28px;
+            box-shadow: 0 12px 26px rgba(139, 69, 19, 0.18);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            flex-shrink: 0;
+            animation: cashierSway 2.4s ease-in-out infinite;
+        }
+
+        .cashier-card-bg {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0) 42%), #1f8a70;
+            opacity: 0.35;
+        }
+
+        .cashier-shirt {
+            position: absolute;
+            left: 50%;
+            bottom: -12px;
+            width: 92px;
+            height: 50px;
+            background: #1f8a70;
+            border-radius: 30px 30px 0 0;
+            transform: translateX(-50%);
+        }
+
+        .cashier-arm,
+        .cashier-leg {
+            position: absolute;
+            background: #f1c27d;
+            transform-origin: top center;
+        }
+
+        .cashier-arm {
+            top: 60px;
+            width: 11px;
+            height: 34px;
+            border-radius: 11px;
+        }
+
+        .cashier-arm.left {
+            left: 16px;
+            animation: armSwingLeft 1.2s ease-in-out infinite;
+        }
+
+        .cashier-arm.right {
+            right: 16px;
+            animation: armSwingRight 1.2s ease-in-out infinite;
+        }
+
+        .cashier-leg {
+            bottom: -5px;
+            width: 12px;
+            height: 28px;
+            border-radius: 10px;
+        }
+
+        .cashier-leg.left {
+            left: 36px;
+            animation: legSwingLeft 1.2s ease-in-out infinite;
+        }
+
+        .cashier-leg.right {
+            right: 36px;
+            animation: legSwingRight 1.2s ease-in-out infinite;
+        }
+
+        .cashier-face {
+            position: relative;
+            width: 74px;
+            height: 86px;
+            border-radius: 38px 38px 32px 32px;
+            background: #f1c27d;
+            margin-bottom: 10px;
+            box-shadow: inset 0 -5px 0 rgba(0,0,0,0.05);
+        }
+
+        .cashier-hair {
+            position: absolute;
+            top: -4px;
+            left: 4px;
+            right: 4px;
+            height: 30px;
+            background: #3a2618;
+            border-radius: 24px 24px 10px 10px;
+        }
+
+        .cashier-eye {
+            position: absolute;
+            top: 38px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #2f241c;
+        }
+
+        .cashier-eye.left {
+            left: 20px;
+        }
+
+        .cashier-eye.right {
+            right: 20px;
+        }
+
+        .cashier-mouth {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            width: 20px;
+            height: 9px;
+            border-bottom: 3px solid #874f42;
+            border-radius: 0 0 16px 16px;
+            transform: translateX(-50%);
+        }
+
+        @keyframes cashierSway {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(-1px) rotate(1deg); }
+        }
+
+        .cashier-cap {
+            position: absolute;
+            top: -8px;
+            left: 8px;
+            right: 8px;
+            height: 18px;
+            background: #145a4a;
+            border-radius: 18px 18px 8px 8px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+        }
+
+        .cashier-info {
+            display: grid;
+            gap: 0.35rem;
+        }
+
+        .cashier-name {
+            font-weight: 900;
+            color: var(--secondary);
+            font-size: 1rem;
+        }
+
+        .cashier-role {
+            font-size: 0.82rem;
+            color: #7a5d3b;
+            font-weight: 700;
+        }
+
+        .cashier-copy {
+            font-size: 0.8rem;
+            color: #5f5447;
+            line-height: 1.45;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .product-btn {
+            background: var(--cream);
+            border: 2px solid var(--bg-dark);
+            border-radius: 12px;
+            padding: 0.8rem 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .product-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.3);
+            border-color: var(--primary);
+        }
+
+        .product-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .product-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .product-btn.locked {
+            background: #e0e0e0;
+            position: relative;
+        }
+
+        .product-btn.locked::after {
+            content: '🔒';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.8rem;
+        }
+
+        .product-icon {
+            font-size: 2rem;
+        }
+
+        .product-name {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .product-price {
+            font-size: 0.7rem;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* Cash Register */
+        .register-display {
+            background: #1a1a2e;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .register-screen {
+            background: #0f0f23;
+            color: #00ff88;
+            padding: 0.8rem;
+            border-radius: 5px;
+            font-size: 1.5rem;
+            text-align: right;
+            letter-spacing: 2px;
+        }
+
+        .cart-items {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: var(--bg);
+            border-radius: 5px;
+            margin-bottom: 0.3rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .cart-item-name {
+            font-size: 0.85rem;
+        }
+
+        .cart-item-price {
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .remove-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 0.2rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+
+        .register-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+        }
+
+        .register-btn {
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-collect {
+            background: linear-gradient(135deg, var(--success) 0%, #1E8449 100%);
+            color: white;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, var(--danger) 0%, #C0392B 100%);
+            color: white;
+        }
+
+        .btn-pay {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        /* Payment Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-overlay.ad-overlay {
+            z-index: 2500;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            animation: modalIn 0.3s ease;
+        }
+
+        .modal.ad-modal {
+            max-width: 520px;
+            background: linear-gradient(135deg, #fff7d0 0%, #ffe0a8 100%);
+            border: 4px solid var(--primary-dark);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.35);
+        }
+
+        @keyframes modalIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: var(--secondary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .payment-amount {
+            background: var(--bg);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .payment-total {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary-dark);
+        }
+
+        .payment-label {
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .money-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .money-btn {
+            padding: 0.8rem;
+            background: var(--bg);
+            border: 2px solid var(--bg-dark);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .money-btn:hover {
+            border-color: var(--primary);
+            background: var(--cream);
+        }
+
+        .money-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+
+        .payment-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .energy-panel {
+            background: linear-gradient(135deg, #fff4da 0%, #ffe7b8 100%);
+            border: 2px solid var(--warning);
+            border-radius: 14px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .energy-level {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+            font-weight: 900;
+            color: var(--secondary);
+        }
+
+        .energy-meter {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(139, 69, 19, 0.15);
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffb347 0%, #ff7b22 100%);
+            transition: width 0.4s ease;
+        }
+
+        .energy-copy {
+            font-size: 0.82rem;
+            color: #6a553b;
+            line-height: 1.45;
+            margin-bottom: 0.8rem;
+        }
+
+        .energy-perks {
+            display: grid;
+            gap: 0.45rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .energy-perk {
+            padding: 0.55rem 0.65rem;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.7);
+            font-size: 0.76rem;
+            border-left: 4px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .energy-perk.unlocked {
+            border-left-color: var(--success);
+        }
+
+        .energy-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--warning) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .energy-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .stock-panel {
+            background: linear-gradient(135deg, #eef7eb 0%, #dff0d7 100%);
+            border: 2px solid #b8d8ae;
+            border-radius: 14px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stock-panel.hidden {
+            display: none;
+        }
+
+        .stock-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.8rem;
+            color: #2f5b2f;
+            font-weight: 800;
+        }
+
+        .stock-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .stock-copy {
+            font-size: 0.78rem;
+            color: #4f6a4f;
+            margin-bottom: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .stock-list {
+            display: grid;
+            gap: 0.45rem;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .stock-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.5rem;
+            align-items: center;
+            background: rgba(255,255,255,0.72);
+            padding: 0.55rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.78rem;
+        }
+
+        .stock-item-name {
+            font-weight: 800;
+            color: var(--secondary);
+        }
+
+        .stock-item-count {
+            font-weight: 900;
+            color: var(--success);
+        }
+
+        .stock-restock-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.45rem 0.55rem;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+
+        .stock-restock-btn:disabled {
+            background: #bfc8bf;
+            cursor: not-allowed;
+        }
+
+        .stock-order-grid {
+            display: grid;
+            gap: 0.7rem;
+            margin-bottom: 1rem;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .stock-order-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.6rem;
+            align-items: center;
+            background: var(--bg);
+            padding: 0.75rem;
+            border-radius: 10px;
+        }
+
+        .stock-order-meta {
+            font-size: 0.76rem;
+            color: #6b6b6b;
+        }
+
+        .stock-qty-input {
+            width: 72px;
+            padding: 0.45rem 0.55rem;
+            border: 2px solid var(--bg-dark);
+            border-radius: 8px;
+            font-weight: 800;
+        }
+
+        .stock-order-summary {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 0.85rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+            color: var(--secondary);
+        }
+
+        .market-extra-actions {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .staff-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .staff-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .staff-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .staff-avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            background: linear-gradient(180deg, #ffe4bf 0%, #ffc773 100%);
+            animation: staffBob 1.8s ease-in-out infinite;
+        }
+
+        .staff-avatar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 40%), var(--staff-shirt, #4d96ff);
+            opacity: 0.28;
+        }
+
+        .staff-shirt {
+            position: absolute;
+            left: 50%;
+            bottom: -8px;
+            width: 54px;
+            height: 28px;
+            background: var(--staff-shirt, #4d96ff);
+            border-radius: 20px 20px 0 0;
+            transform: translateX(-50%);
+        }
+
+        .staff-arm,
+        .staff-leg {
+            position: absolute;
+            background: var(--staff-skin, #f1c27d);
+            transform-origin: top center;
+        }
+
+        .staff-arm {
+            top: 31px;
+            width: 6px;
+            height: 18px;
+            border-radius: 8px;
+        }
+
+        .staff-arm.left {
+            left: 9px;
+            animation: armSwingLeft 1s ease-in-out infinite;
+        }
+
+        .staff-arm.right {
+            right: 9px;
+            animation: armSwingRight 1s ease-in-out infinite;
+        }
+
+        .staff-leg {
+            bottom: -4px;
+            width: 7px;
+            height: 16px;
+            border-radius: 8px;
+        }
+
+        .staff-leg.left {
+            left: 19px;
+            animation: legSwingLeft 1s ease-in-out infinite;
+        }
+
+        .staff-leg.right {
+            right: 19px;
+            animation: legSwingRight 1s ease-in-out infinite;
+        }
+
+        .staff-face {
+            position: relative;
+            width: 38px;
+            height: 44px;
+            border-radius: 20px 20px 16px 16px;
+            background: var(--staff-skin, #f1c27d);
+            margin-bottom: 7px;
+        }
+
+        .staff-hair {
+            position: absolute;
+            top: -3px;
+            left: 2px;
+            right: 2px;
+            height: 16px;
+            background: var(--staff-hair, #3f2a1d);
+            border-radius: 14px 14px 6px 6px;
+        }
+
+        .staff-hair.female::after {
+            content: '';
+            position: absolute;
+            left: -4px;
+            right: -4px;
+            top: 10px;
+            height: 16px;
+            background: var(--staff-hair, #3f2a1d);
+            border-radius: 10px 10px 12px 12px;
+            z-index: -1;
+        }
+
+        .staff-eye {
+            position: absolute;
+            top: 18px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #2f241c;
+        }
+
+        .staff-eye.left {
+            left: 10px;
+        }
+
+        .staff-eye.right {
+            right: 10px;
+        }
+
+        .staff-mouth {
+            position: absolute;
+            left: 50%;
+            bottom: 9px;
+            width: 12px;
+            height: 6px;
+            border-bottom: 2px solid #874f42;
+            border-radius: 0 0 10px 10px;
+            transform: translateX(-50%);
+        }
+
+        @keyframes staffBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+
+        .staff-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--secondary);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.25rem;
+            z-index: 2;
+        }
+
+        .staff-card h4 {
+            color: var(--secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .staff-card p {
+            font-size: 0.78rem;
+            color: #6a6a6a;
+        }
+
+        .cleanliness-wrap {
+            margin-top: 1rem;
+            background: var(--bg);
+            border-radius: 14px;
+            padding: 1rem;
+        }
+
+        .cleanliness-head {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 900;
+            color: var(--secondary);
+            margin-bottom: 0.6rem;
+        }
+
+        .cleanliness-bar {
+            height: 10px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 0.7rem;
+        }
+
+        .cleanliness-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c0392b 0%, #f1c40f 45%, #27ae60 100%);
+        }
+
+        .cleanliness-copy {
+            font-size: 0.78rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .ad-banner {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            width: 260px;
+            background: linear-gradient(135deg, #fff6c9 0%, #ffd27d 100%);
+            color: var(--secondary);
+            border: 3px solid var(--primary-dark);
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1200;
+        }
+
+        .ad-banner.hidden {
+            display: none;
+        }
+
+        .ad-badge {
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            color: white;
+            background: var(--danger);
+            padding: 0.35rem 0.45rem;
+            border-radius: 999px;
+            margin-bottom: 0.8rem;
+        }
+
+        .ad-title {
+            font-weight: 900;
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .ad-text {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 0.9rem;
+        }
+
+        .ad-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .ad-btn {
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .ad-btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .ad-btn-secondary {
+            background: white;
+            color: var(--secondary);
+            border: 2px solid var(--bg-dark);
+        }
+
+        .ad-modal-copy {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .ad-modal-headline {
+            font-family: 'Press Start 2P', cursive;
+            color: var(--secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 0.9rem;
+        }
+
+        .ad-modal-copy p {
+            font-size: 0.95rem;
+            color: #5d4b35;
+            line-height: 1.5;
+        }
+
+        /* Quests Panel */
+        .quest-item {
+            background: var(--bg);
+            padding: 0.8rem;
+            border-radius: 10px;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid var(--bg-dark);
+            transition: all 0.3s ease;
+        }
+
+        .quest-item.active {
+            border-left-color: var(--warning);
+            background: #FFF8E1;
+        }
+
+        .quest-item.completed {
+            border-left-color: var(--success);
+            opacity: 0.7;
+        }
+
+        .quest-item.locked {
+            opacity: 0.5;
+        }
+
+        .quest-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .quest-desc {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .quest-progress {
+            margin-top: 0.5rem;
+            height: 6px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .quest-progress-fill {
+            height: 100%;
+            background: var(--warning);
+            transition: width 0.3s ease;
+        }
+
+        .quest-reward {
+            font-size: 0.7rem;
+            color: var(--success);
+            font-weight: 700;
+            margin-top: 0.3rem;
+        }
+
+        /* Level Up Notification */
+        .level-up-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, var(--gold) 0%, var(--warning) 100%);
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 2000;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transition: transform 0.5s ease;
+        }
+
+        .level-up-notification.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .level-up-title {
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            font-size: 1.5rem;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+            margin-bottom: 1rem;
+        }
+
+        .level-up-number {
+            font-size: 5rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+        }
+
+        /* Own Market Panel */
+        .own-market-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1500;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .own-market-panel.active {
+            display: flex;
+        }
+
+        .market-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .market-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: var(--secondary);
+        }
+
+        .close-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .market-stat {
+            background: var(--bg);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .market-stat-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--primary-dark);
+        }
+
+        .market-stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .market-upgrades {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .upgrade-item {
+            background: var(--bg);
+            padding: 1rem;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .upgrade-info h4 {
+            color: var(--secondary);
+            margin-bottom: 0.3rem;
+        }
+
+        .upgrade-info p {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .upgrade-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .upgrade-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .hire-section {
+            margin-top: 1.5rem;
+        }
+
+        .employee-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        /* Toast Messages */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3000;
+        }
+
+        .toast {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            animation: toastIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.xp {
+            border-left: 4px solid var(--warning);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        /* Open Market Button */
+        .open-market-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--gold) 0%, var(--warning) 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            box-shadow: 0 5px 20px rgba(241, 196, 15, 0.5);
+            animation: pulse 2s infinite;
+            z-index: 100;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+
+        .open-market-btn.show {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-bar {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .ad-banner {
+                top: auto;
+                bottom: 16px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <aside class="ad-banner" id="ad-banner">
+        <div class="ad-badge">REKLAM</div>
+        <div class="ad-title">Süper Fırsat Kasası</div>
+        <div class="ad-text" id="ad-banner-text">Kasaya hız kat. Reklamlar her 1 dakikada bir gösterilir.</div>
+        <div class="ad-actions">
+            <button class="ad-btn ad-btn-primary" id="remove-ads-btn">Reklamları Kaldır 250 $</button>
+            <button class="ad-btn ad-btn-secondary" id="show-ad-now-btn">Reklamı Aç</button>
+        </div>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+        <h1 class="logo">🛒 Süper Kasalı</h1>
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-icon">💰</span>
+                <span id="money">0</span> $
+            </div>
+            <div class="stat">
+                <span class="stat-icon">👥</span>
+                <span id="customers">0</span> Müşteri
+            </div>
+            <div class="stat">
+                <span class="stat-icon">⚡</span>
+                <span id="energy-stat">0</span>
+            </div>
+            <div class="level-progress-container">
+                <div class="level-text">Seviye <span id="level">1</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="xp-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game -->
+    <main class="game-container">
+        <!-- Left Panel: Customer & Products -->
+        <div class="panel">
+            <h2 class="panel-title">👤 Müşteri</h2>
+            <div class="customer-area" id="customer-area">
+                <div class="customer-avatar" id="customer-avatar">👤</div>
+                <div class="customer-info">
+                    <div class="customer-name" id="customer-name">Müşteri Bekleniyor...</div>
+                    <div class="customer-order" id="customer-order">Sandığınızı seçin</div>
+                    <div class="customer-status" id="customer-status"></div>
+                </div>
+            </div>
+
+            <h2 class="panel-title" style="margin-top: 1.5rem;">📦 Ürünler</h2>
+            <div class="products-grid" id="products-grid">
+                <!-- Products will be generated by JS -->
+            </div>
+
+            <div class="stock-panel hidden" id="stock-panel">
+                <div class="stock-top">
+                    <span>📦 Depo</span>
+                    <span id="stock-capacity">0 / 0</span>
+                </div>
+                <div class="stock-actions">
+                    <button class="stock-restock-btn" id="open-order-modal">Toplu Sipariş</button>
+                    <button class="stock-restock-btn" id="quick-restock-btn">Hızlı Doldur</button>
+                </div>
+                <div class="stock-copy" id="stock-copy">Seviye 6'da gerçek depo ve stok sistemi açılır.</div>
+                <div class="stock-list" id="stock-list"></div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Cash Register -->
+        <div class="panel">
+            <h2 class="panel-title">💻 Kasa</h2>
+            <div class="cashier-area">
+                <div class="cashier-avatar" aria-hidden="true">
+                    <div class="cashier-card-bg"></div>
+                    <div class="cashier-arm left"></div>
+                    <div class="cashier-arm right"></div>
+                    <div class="cashier-leg left"></div>
+                    <div class="cashier-leg right"></div>
+                    <div class="cashier-shirt"></div>
+                    <div class="cashier-face">
+                        <div class="cashier-cap"></div>
+                        <div class="cashier-hair"></div>
+                        <div class="cashier-eye left"></div>
+                        <div class="cashier-eye right"></div>
+                        <div class="cashier-mouth"></div>
+                    </div>
+                </div>
+                <div class="cashier-info">
+                    <div class="cashier-name">Kasiyer Sensin</div>
+                    <div class="cashier-role">Hazır, hızlı ve dikkatli</div>
+                    <div class="cashier-copy">Müşterileri karşıla, siparişi doğru topla ve ödemeyi eksiksiz tamamla.</div>
+                </div>
+            </div>
+            <div class="register-display">
+                <div class="register-screen" id="register-screen">0.00 $</div>
+            </div>
+            
+            <div class="cart-items" id="cart-items">
+                <!-- Cart items will appear here -->
+            </div>
+            
+            <div class="register-buttons">
+                <button class="register-btn btn-collect" id="btn-collect">💵 Tahsil Et</button>
+                <button class="register-btn btn-clear" id="btn-clear">🗑️ Temizle</button>
+                <button class="register-btn btn-pay" id="btn-pay" disabled>Ödeme Yap</button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Quests -->
+        <div class="panel">
+            <h2 class="panel-title">⚡ Enerji</h2>
+            <div class="energy-panel">
+                <div class="energy-level">
+                    <span>Seviye <span id="energy-level">0</span></span>
+                    <span id="energy-next">Sonraki eşik: 2</span>
+                </div>
+                <div class="energy-meter">
+                    <div class="energy-fill" id="energy-bar" style="width: 0%"></div>
+                </div>
+                <div class="energy-copy" id="energy-copy">Enerji, reklam izleyerek yükselir. Her eşik yeni avantaj açar.</div>
+                <div class="energy-perks" id="energy-perks"></div>
+                <button class="energy-btn" id="watch-energy-ad-btn">+1 Enerji için Reklam İzle</button>
+            </div>
+
+            <h2 class="panel-title">📋 Görevler</h2>
+            <div id="quests-list">
+                <!-- Quests will be generated by JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal">
+            <h2 class="modal-title">💰 Ödeme</h2>
+            <div class="payment-amount">
+                <div class="payment-label">Toplam Tutar</div>
+                <div class="payment-total" id="payment-total">0 $</div>
+            </div>
+            <div class="money-options" id="money-options">
+                <!-- Money buttons will be generated -->
+            </div>
+            <div class="payment-buttons">
+                <button class="register-btn btn-clear" id="btn-cancel-payment">İptal</button>
+                <button class="register-btn btn-collect" id="btn-confirm-payment">Onayla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay ad-overlay" id="ad-modal">
+        <div class="modal ad-modal">
+            <div class="ad-modal-copy">
+                <div class="ad-modal-headline">MARKETİNİ BÜYÜT<br>FIRSATI KAÇIRMA</div>
+                <p id="ad-modal-text">Reklam izleniyor. Devam etmek için kapat ya da 250 $ ödeyip reklamları tamamen kaldır.</p>
+            </div>
+            <div class="payment-buttons">
+                <button class="register-btn btn-clear" id="close-ad-btn">Reklamı Kapat</button>
+                <button class="register-btn btn-collect" id="buy-no-ads-btn">250 $ ile Kaldır</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="order-modal">
+        <div class="modal">
+            <h2 class="modal-title">📦 Toptancı Siparişi</h2>
+            <div class="stock-order-summary" id="order-summary">0 ürün • 0 $</div>
+            <div class="stock-order-grid" id="stock-order-grid"></div>
+            <div class="payment-buttons">
+                <button class="register-btn btn-clear" id="cancel-order-modal">İptal</button>
+                <button class="register-btn btn-collect" id="confirm-order-modal">Siparişi Ver</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Up Notification -->
+    <div class="level-up-notification" id="level-up-notification">
+        <div class="level-up-title">SEVİYE ATLADIN!</div>
+        <div class="level-up-number" id="new-level">2</div>
+    </div>
+
+    <!-- Own Market Panel -->
+    <div class="own-market-panel" id="own-market-panel">
+        <div class="market-panel">
+            <div class="market-header">
+                <h2 class="market-title">🏪 Kendi Marketini Yönet</h2>
+                <button class="close-btn" id="close-market">Kapat</button>
+            </div>
+            <div class="market-stats">
+                <div class="market-stat">
+                    <div class="market-stat-value" id="market-income">0</div>
+                    <div class="market-stat-label">Günlük Gelir</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-value" id="market-level">1</div>
+                    <div class="market-stat-label">Market Seviyesi</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-value" id="market-size">S</div>
+                    <div class="market-stat-label">Market Boyutu</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-value" id="market-employees">0</div>
+                    <div class="market-stat-label">Çalışan Sayısı</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-value" id="market-cleanliness">100%</div>
+                    <div class="market-stat-label">Temizlik</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-value" id="market-products">0</div>
+                    <div class="market-stat-label">Ürün Çeşidi</div>
+                </div>
+            </div>
+            <div class="market-upgrades" id="market-upgrades">
+                <!-- Upgrades will be generated -->
+            </div>
+            <div class="hire-section">
+                <button class="employee-btn" id="hire-employee">+ Çalışan Al (500 $)</button>
+            </div>
+            <div class="staff-grid">
+                <div class="staff-card">
+                    <div class="staff-meta">
+                        <div class="staff-avatar" style="--staff-shirt:#4d96ff; --staff-skin:#f1c27d; --staff-hair:#342117;">
+                            <div class="staff-badge" id="cashier-count">0</div>
+                            <div class="staff-arm left"></div>
+                            <div class="staff-arm right"></div>
+                            <div class="staff-leg left"></div>
+                            <div class="staff-leg right"></div>
+                            <div class="staff-shirt"></div>
+                            <div class="staff-face">
+                                <div class="staff-hair"></div>
+                                <div class="staff-eye left"></div>
+                                <div class="staff-eye right"></div>
+                                <div class="staff-mouth"></div>
+                            </div>
+                        </div>
+                        <div>
+                        <h4>Kasiyer</h4>
+                        <p>Pasif geliri artırır.</p>
+                        </div>
+                    </div>
+                    <button class="upgrade-btn" id="hire-cashier-btn">İşe Al</button>
+                </div>
+                <div class="staff-card">
+                    <div class="staff-meta">
+                        <div class="staff-avatar" style="--staff-shirt:#f28482; --staff-skin:#e0ac69; --staff-hair:#5b3a29;">
+                            <div class="staff-badge" id="cleaner-count">0</div>
+                            <div class="staff-arm left"></div>
+                            <div class="staff-arm right"></div>
+                            <div class="staff-leg left"></div>
+                            <div class="staff-leg right"></div>
+                            <div class="staff-shirt"></div>
+                            <div class="staff-face">
+                                <div class="staff-hair female"></div>
+                                <div class="staff-eye left"></div>
+                                <div class="staff-eye right"></div>
+                                <div class="staff-mouth"></div>
+                            </div>
+                        </div>
+                        <div>
+                        <h4>Temizlikçi</h4>
+                        <p>Market temizliğini otomatik korur.</p>
+                        </div>
+                    </div>
+                    <button class="upgrade-btn" id="hire-cleaner-btn">İşe Al</button>
+                </div>
+                <div class="staff-card">
+                    <div class="staff-meta">
+                        <div class="staff-avatar" style="--staff-shirt:#43aa8b; --staff-skin:#c68642; --staff-hair:#241712;">
+                            <div class="staff-badge" id="stocker-count">0</div>
+                            <div class="staff-arm left"></div>
+                            <div class="staff-arm right"></div>
+                            <div class="staff-leg left"></div>
+                            <div class="staff-leg right"></div>
+                            <div class="staff-shirt"></div>
+                            <div class="staff-face">
+                                <div class="staff-hair"></div>
+                                <div class="staff-eye left"></div>
+                                <div class="staff-eye right"></div>
+                                <div class="staff-mouth"></div>
+                            </div>
+                        </div>
+                        <div>
+                        <h4>Raf Görevlisi</h4>
+                        <p>Ürün çeşitliliği ve tedarik verimi artar.</p>
+                        </div>
+                    </div>
+                    <button class="upgrade-btn" id="hire-stocker-btn">İşe Al</button>
+                </div>
+            </div>
+            <div class="cleanliness-wrap">
+                <div class="cleanliness-head">
+                    <span>🧹 Market Temizliği</span>
+                    <span id="cleanliness-value">100%</span>
+                </div>
+                <div class="cleanliness-bar">
+                    <div class="cleanliness-fill" id="cleanliness-bar" style="width: 100%"></div>
+                </div>
+                <div class="cleanliness-copy" id="cleanliness-copy">Temiz market daha iyi itibar ve gelir sağlar.</div>
+                <button class="employee-btn" id="clean-market-btn">Marketi Temizle</button>
+            </div>
+            <div class="market-extra-actions">
+                <button class="employee-btn" id="toggle-auto-restock">Oto Tedarik: Kapalı</button>
+                <button class="employee-btn" id="expand-market-btn">Marketi Büyüt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Open Market Button -->
+    <button class="open-market-btn" id="open-market-btn">🏪 Kendi Marketini Aç!</button>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        const STORAGE_KEY = 'supermarketGame';
+        const MARKET_INCOME_INTERVAL_MS = 5000;
+        const AD_INTERVAL_MS = 60000;
+        const AD_CLOSE_DELAY_MS = 5000;
+        const DOUBLE_AD_CHANCE = 0.7;
+        const CURRENCY_SYMBOL = '$';
+        const MAX_ENERGY = 8;
+        const defaultState = {
+            money: 0,
+            level: 1,
+            xp: 0,
+            xpToNextLevel: 100,
+            customersServed: 0,
+            customersToday: 0,
+            day: 1,
+            reputation: 0,
+            combo: 0,
+            perfectStreak: 0,
+            currentCustomer: null,
+            cart: [],
+            lastOrderTotal: 0,
+            fastestTransactionMs: null,
+            orderStartedAt: null,
+            completedQuestIds: [],
+            adsRemoved: false,
+            adViews: 0,
+            energy: 0,
+            depot: {
+                unlocked: false,
+                capacity: 40,
+                items: {}
+            },
+            weather: {
+                name: 'Gunesli',
+                effect: 'Normal musteri akisi'
+            },
+            market: {
+                unlocked: false,
+                level: 1,
+                size: 1,
+                employees: 0,
+                cashiers: 0,
+                cleaners: 0,
+                stockers: 0,
+                cleanliness: 100,
+                income: 0,
+                productCount: 10,
+                incomeMultiplier: 1,
+                efficiencyMultiplier: 1,
+                autoRestock: false,
+                purchasedUpgrades: []
+            }
+        };
+
+        const gameState = JSON.parse(JSON.stringify(defaultState));
+
+        const allProducts = [
+            { id: 1, name: 'Ekmek', price: 5, icon: '🍞', unlockLevel: 1, category: 'Temel Gıda' },
+            { id: 2, name: 'Süt', price: 15, icon: '🥛', unlockLevel: 1, category: 'Temel Gıda' },
+            { id: 3, name: 'Yumurta', price: 20, icon: '🥚', unlockLevel: 1, category: 'Temel Gıda' },
+            { id: 4, name: 'Su', price: 3, icon: '💧', unlockLevel: 1, category: 'Temel Gıda' },
+            { id: 5, name: 'Çay', price: 10, icon: '🍵', unlockLevel: 1, category: 'Temel Gıda' },
+            { id: 6, name: 'Meyve', price: 25, icon: '🍎', unlockLevel: 3, category: 'Manav' },
+            { id: 7, name: 'Sebze', price: 18, icon: '🥬', unlockLevel: 3, category: 'Manav' },
+            { id: 8, name: 'Peynir', price: 45, icon: '🧀', unlockLevel: 5, category: 'Süt Ürünleri' },
+            { id: 9, name: 'Kahve', price: 20, icon: '☕', unlockLevel: 5, category: 'İçecek' },
+            { id: 10, name: 'Et', price: 120, icon: '🥩', unlockLevel: 7, category: 'Kasap' },
+            { id: 11, name: 'Balık', price: 80, icon: '🐟', unlockLevel: 9, category: 'Kasap' },
+            { id: 12, name: 'Tavuk', price: 45, icon: '🍗', unlockLevel: 9, category: 'Kasap' },
+            { id: 13, name: 'Dondurma', price: 30, icon: '🍦', unlockLevel: 11, category: 'Tatlı' },
+            { id: 14, name: 'Çikolata', price: 22, icon: '🍫', unlockLevel: 11, category: 'Tatlı' },
+            { id: 15, name: 'Cips', price: 17, icon: '🍟', unlockLevel: 13, category: 'Atıştırmalık' },
+            { id: 16, name: 'Gazoz', price: 12, icon: '🥤', unlockLevel: 13, category: 'Atıştırmalık' },
+            { id: 17, name: 'Deterjan', price: 60, icon: '🧴', unlockLevel: 15, category: 'Temizlik' },
+            { id: 18, name: 'Sabun', price: 16, icon: '🧼', unlockLevel: 15, category: 'Temizlik' }
+        ];
+
+        const categoryUnlocks = [
+            { level: 1, name: 'Temel Gıda' },
+            { level: 3, name: 'Manav' },
+            { level: 5, name: 'Süt Ürünleri ve İçecek' },
+            { level: 7, name: 'Kasap' },
+            { level: 11, name: 'Tatlı' },
+            { level: 13, name: 'Atıştırmalık' },
+            { level: 15, name: 'Temizlik' }
+        ];
+
+        const quests = [
+            { id: 1, name: 'İlk Gün', desc: '5 müşteriye hizmet et', target: 5, type: 'customers', reward: 50, reqLevel: 1 },
+            { id: 2, name: 'Hız Kasabı', desc: '10 müşteriye hizmet et', target: 10, type: 'customers', reward: 100, reqLevel: 2 },
+            { id: 3, name: 'Vip Müşteri', desc: '200 $ üstü sipariş al', target: 200, type: 'bigOrder', reward: 150, reqLevel: 3 },
+            { id: 4, name: 'Hatasız Kasar', desc: '5 ardışık hatasız işlem', target: 5, type: 'perfect', reward: 200, reqLevel: 4 },
+            { id: 5, name: 'Kasa Ustası', desc: '20 müşteriye hizmet et', target: 20, type: 'customers', reward: 250, reqLevel: 5 },
+            { id: 6, name: 'Zengin Müşteri', desc: '500 $ üstü sipariş al', target: 500, type: 'bigOrder', reward: 300, reqLevel: 7 },
+            { id: 7, name: 'Süper Kasador', desc: '50 müşteriye hizmet et', target: 50, type: 'customers', reward: 500, reqLevel: 10 }
+        ];
+
+        const maleCustomerNames = [
+            'Ahmet Bey', 'Mehmet Bey', 'Ali Bey', 'Mustafa Bey', 'İbrahim Bey',
+            'Osman Bey', 'Hüseyin Bey', 'Kemal Bey', 'Murat Bey', 'Serkan Bey'
+        ];
+
+        const femaleCustomerNames = [
+            'Ayşe Hanım', 'Fatma Hanım', 'Zeynep Hanım', 'Elif Hanım', 'Hatice Hanım',
+            'Gül Hanım', 'Merve Hanım', 'Seda Hanım', 'Derya Hanım', 'Ece Hanım'
+        ];
+
+        const customerLooks = [
+            { gender: 'male', skin: '#f1c27d', hair: '#3b2b20', shirt: '#4d96ff', hairStyle: 'short', glasses: false, mustache: false, beard: false, lashes: false, earrings: false },
+            { gender: 'female', skin: '#e0ac69', hair: '#5b3a29', shirt: '#ff7b54', hairStyle: 'long', glasses: true, mustache: false, beard: false, lashes: true, earrings: true },
+            { gender: 'male', skin: '#c68642', hair: '#1f1a17', shirt: '#53b175', hairStyle: 'short', glasses: false, mustache: true, beard: true, lashes: false, earrings: false },
+            { gender: 'female', skin: '#8d5524', hair: '#2c1b13', shirt: '#9b5de5', hairStyle: 'bob', glasses: false, mustache: false, beard: false, lashes: true, earrings: true },
+            { gender: 'male', skin: '#f1c27d', hair: '#8c6a53', shirt: '#f15bb5', hairStyle: 'short', glasses: true, mustache: true, beard: false, lashes: false, earrings: false },
+            { gender: 'female', skin: '#e0ac69', hair: '#d6d6d6', shirt: '#00bbf9', hairStyle: 'ponytail', glasses: true, mustache: false, beard: false, lashes: true, earrings: true },
+            { gender: 'male', skin: '#7f4f24', hair: '#25150f', shirt: '#ffb703', hairStyle: 'curly', glasses: false, mustache: false, beard: true, lashes: false, earrings: false },
+            { gender: 'female', skin: '#d7a86e', hair: '#6f3b2c', shirt: '#43aa8b', hairStyle: 'curly', glasses: false, mustache: false, beard: false, lashes: true, earrings: true }
+        ];
+
+        const marketUpgrades = [
+            { id: 1, name: 'Raf Genişletme', desc: 'Ürün çeşidi +5', cost: 220, type: 'products', effect: 5, repeatable: true },
+            { id: 2, name: 'Reklam Panosu', desc: 'Pasif gelir çarpanı +%20', cost: 360, type: 'income', effect: 1.2, repeatable: true },
+            { id: 3, name: 'Otomatik Kasa', desc: 'Çalışan verimliliği +%50', cost: 540, type: 'efficiency', effect: 1.5, repeatable: false },
+            { id: 4, name: 'Market Yenileme', desc: 'Market seviyesi +1', cost: 700, type: 'marketLevel', effect: 1, repeatable: true }
+        ];
+
+        const adMessages = [
+            'Kasana turbo taktır, müşteriyi bekletme.',
+            'Süper raf sistemi ile satışlarını katla.',
+            'Mahallenin en hızlı marketi seninki olsun.',
+            'Kendi marketini aç, pasif gelirle büyü.'
+        ];
+
+        const energyPerks = [
+            { threshold: 2, name: 'Kafein Modu', desc: 'Her başarılı işlemde +5 bonus XP.' },
+            { threshold: 4, name: 'Premium Raf', desc: '5. seviye ve üstü ürünler 2 seviye erken açılır.' },
+            { threshold: 6, name: 'Hızlı Servis', desc: 'Her işlemde %35 ihtimalle +15 $ bahşiş.' },
+            { threshold: 8, name: 'Gece Vardiyası', desc: 'Pasif market geliri %25 artar.' }
+        ];
+
+        const weatherStates = [
+            { name: 'Gunesli', effect: 'Temel siparis akisi', extraItems: 0, vipChance: 0.02 },
+            { name: 'Yagmurlu', effect: 'Icecek ve sicak urun talebi artar', extraItems: 1, vipChance: 0.03 },
+            { name: 'Festival', effect: 'Atistirmalik ve tatli siparisleri kabarir', extraItems: 2, vipChance: 0.08 },
+            { name: 'Sessiz Gun', effect: 'Daha sakin ama secici musteriler', extraItems: 0, vipChance: 0.01 }
+        ];
+
+        let selectedAmount = 0;
+        let paymentTotal = 0;
+        let adIntervalId = null;
+        let adContext = 'default';
+        let adCloseCountdownId = null;
+        let adCloseLockedUntil = 0;
+        let queuedFollowUpAd = false;
+        let wholesaleDraft = {};
+
+        function initGame() {
+            loadGame();
+            ensureDepotState();
+            ensureWeatherState();
+            setupEventListeners();
+            renderProducts();
+            renderCart();
+            renderDepot();
+            renderEnergyPanel();
+            renderQuests();
+            ensureCustomer();
+            syncProgressUnlocks();
+            syncAdsUI();
+            updateUI();
+
+            setInterval(() => {
+                if (!gameState.market.unlocked || gameState.market.employees === 0) {
+                    return;
+                }
+
+                const income = calculatePassiveIncome();
+                gameState.money += income;
+                gameState.market.income = income;
+                if (gameState.market.autoRestock && isDepotUnlocked()) {
+                    autoRestockDepot();
+                }
+                updateUI();
+                saveGame();
+            }, MARKET_INCOME_INTERVAL_MS);
+
+            startAdLoop();
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) {
+                return;
+            }
+
+            try {
+                const data = JSON.parse(saved);
+                Object.assign(gameState, defaultState, data);
+                gameState.depot = { ...defaultState.depot, ...(data.depot || {}) };
+                gameState.market = { ...defaultState.market, ...(data.market || {}) };
+                gameState.cart = [];
+                gameState.currentCustomer = null;
+            } catch (error) {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+
+        function saveGame() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+        }
+
+        function formatMoney(amount) {
+            return `${Number(amount).toFixed(Number.isInteger(amount) ? 0 : 2)} ${CURRENCY_SYMBOL}`;
+        }
+
+        function getMarketSizeLabel() {
+            return ['S', 'M', 'L', 'XL', 'Mega'][Math.min(4, gameState.market.size - 1)];
+        }
+
+        function getMarketExpansionCost() {
+            return 900 + (gameState.market.size - 1) * 650;
+        }
+
+        function getStaffHireCost(type) {
+            switch (type) {
+                case 'cashier':
+                    return 500 + gameState.market.cashiers * 180;
+                case 'cleaner':
+                    return 420 + gameState.market.cleaners * 140;
+                case 'stocker':
+                    return 460 + gameState.market.stockers * 160;
+                default:
+                    return 0;
+            }
+        }
+
+        function getCleanMarketCost() {
+            return 80 + Math.max(0, 100 - gameState.market.cleanliness) * 4;
+        }
+
+        function getCleanlinessMultiplier() {
+            return 0.7 + (gameState.market.cleanliness / 100) * 0.4;
+        }
+
+        function ensureDepotState() {
+            allProducts.forEach(product => {
+                if (typeof gameState.depot.items[product.id] !== 'number') {
+                    gameState.depot.items[product.id] = product.unlockLevel <= 5 ? 8 : 0;
+                }
+            });
+            gameState.depot.capacity = getDepotCapacity();
+        }
+
+        function ensureWeatherState() {
+            if (!gameState.weather || !gameState.weather.name) {
+                gameState.weather = weatherStates[0];
+            }
+        }
+
+        function rollDailyWeather() {
+            gameState.weather = weatherStates[Math.floor(Math.random() * weatherStates.length)];
+            showToast(`🌤 Hava: ${gameState.weather.name} - ${gameState.weather.effect}`, 'success');
+        }
+
+        function getRandomAdMessage() {
+            return adMessages[Math.floor(Math.random() * adMessages.length)];
+        }
+
+        function syncAdsUI() {
+            const banner = document.getElementById('ad-banner');
+            const removeBtn = document.getElementById('remove-ads-btn');
+            const bannerText = document.getElementById('ad-banner-text');
+            const modalText = document.getElementById('ad-modal-text');
+            const buyNoAdsBtn = document.getElementById('buy-no-ads-btn');
+            const closeAdBtn = document.getElementById('close-ad-btn');
+            const removed = gameState.adsRemoved;
+            const remainingMs = Math.max(0, adCloseLockedUntil - Date.now());
+            const remainingSeconds = Math.ceil(remainingMs / 1000);
+
+            banner.classList.toggle('hidden', removed);
+            removeBtn.textContent = removed ? 'Reklamlar Kaldırıldı' : `Reklamları Kaldır ${formatMoney(250)}`;
+            removeBtn.disabled = removed;
+            bannerText.textContent = removed
+                ? 'Reklamsız mod aktif. Kasa artık kesintisiz çalışıyor.'
+                : `${getRandomAdMessage()} Reklam sayısı: ${gameState.adViews}`;
+            modalText.textContent = removed
+                ? 'Reklamsız mod aktif.'
+                : `Reklam izleniyor. Devam etmek için kapat ya da ${formatMoney(250)} ödeyip reklamları tamamen kaldır.`;
+            buyNoAdsBtn.disabled = adContext === 'energy';
+            buyNoAdsBtn.textContent = adContext === 'energy' ? 'Enerji İçin Reklam Zorunlu' : `${formatMoney(250)} ile Kaldır`;
+            closeAdBtn.disabled = remainingMs > 0;
+            closeAdBtn.textContent = remainingMs > 0 ? `Reklamı Kapat (${remainingSeconds})` : 'Reklamı Kapat';
+        }
+
+        function startAdCloseCountdown() {
+            if (adCloseCountdownId) {
+                clearInterval(adCloseCountdownId);
+            }
+
+            adCloseLockedUntil = Date.now() + AD_CLOSE_DELAY_MS;
+            syncAdsUI();
+
+            adCloseCountdownId = setInterval(() => {
+                if (Date.now() >= adCloseLockedUntil) {
+                    clearInterval(adCloseCountdownId);
+                    adCloseCountdownId = null;
+                    adCloseLockedUntil = 0;
+                }
+                syncAdsUI();
+            }, 250);
+        }
+
+        function stopAdCloseCountdown() {
+            if (adCloseCountdownId) {
+                clearInterval(adCloseCountdownId);
+                adCloseCountdownId = null;
+            }
+            adCloseLockedUntil = 0;
+        }
+
+        function startAdLoop() {
+            if (adIntervalId) {
+                clearInterval(adIntervalId);
+            }
+
+            if (gameState.adsRemoved) {
+                return;
+            }
+
+            adIntervalId = setInterval(() => {
+                showAdvertisement();
+            }, AD_INTERVAL_MS);
+        }
+
+        function showAdvertisement(context = 'default', isChain = false) {
+            if (context === 'energy' && gameState.adsRemoved) {
+                increaseEnergy();
+                return;
+            }
+
+            if (gameState.adsRemoved && context !== 'energy') {
+                return;
+            }
+
+            adContext = context;
+            queuedFollowUpAd = context === 'default' && !isChain && Math.random() < DOUBLE_AD_CHANCE;
+            gameState.adViews += 1;
+            document.getElementById('ad-modal-text').textContent = context === 'energy'
+                ? 'Enerji yükseltmek için bu reklam zorunlu. Reklamı kapatınca +1 enerji kazanırsın.'
+                : `${getRandomAdMessage()} Reklam kapatıldıktan sonra oyuna devam edilir.`;
+            document.getElementById('ad-modal').classList.add('active');
+            startAdCloseCountdown();
+            syncAdsUI();
+            saveGame();
+        }
+
+        function closeAdvertisement() {
+            if (Date.now() < adCloseLockedUntil) {
+                showToast('Reklam henüz kapatılamaz.', 'error');
+                return;
+            }
+
+            stopAdCloseCountdown();
+            document.getElementById('ad-modal').classList.remove('active');
+            if (adContext === 'energy') {
+                increaseEnergy();
+            }
+            const shouldShowFollowUpAd = adContext === 'default' && queuedFollowUpAd && !gameState.adsRemoved;
+            queuedFollowUpAd = false;
+            adContext = 'default';
+            syncAdsUI();
+            if (shouldShowFollowUpAd) {
+                setTimeout(() => showAdvertisement('default', true), 250);
+            }
+        }
+
+        function buyAdRemoval() {
+            if (gameState.adsRemoved) {
+                showToast('Reklamlar zaten kaldırıldı.', 'success');
+                return;
+            }
+
+            if (adContext === 'energy') {
+                showToast('Enerji yükseltmek için reklam izlemek zorunlu.', 'error');
+                return;
+            }
+
+            if (gameState.money < 250) {
+                showToast(`Reklam kaldırma için ${formatMoney(250)} gerekiyor.`, 'error');
+                return;
+            }
+
+            gameState.money -= 250;
+            gameState.adsRemoved = true;
+            queuedFollowUpAd = false;
+            closeAdvertisement();
+            syncAdsUI();
+            updateUI();
+            saveGame();
+            startAdLoop();
+            showToast('Reklamlar kalıcı olarak kaldırıldı.', 'success');
+        }
+
+        function getUnlockedProducts() {
+            return allProducts.filter(product => getProductRequiredLevel(product) <= gameState.level);
+        }
+
+        function getDepotCapacity() {
+            return 40 + Math.max(0, gameState.level - 6) * 6;
+        }
+
+        function isDepotUnlocked() {
+            return gameState.level >= 6;
+        }
+
+        function getCurrentDepotLoad() {
+            return Object.values(gameState.depot.items).reduce((sum, count) => sum + count, 0);
+        }
+
+        function getDepotAvailableSpace() {
+            return Math.max(0, getDepotCapacity() - getCurrentDepotLoad());
+        }
+
+        function getProductStock(productId) {
+            return gameState.depot.items[productId] || 0;
+        }
+
+        function getWholesaleUnitCost(product) {
+            return Math.ceil(product.price * 0.6);
+        }
+
+        function getCartCountForProduct(productId) {
+            return gameState.cart.filter(item => item.id === productId).length;
+        }
+
+        function getAvailableCustomerProducts() {
+            const unlocked = getUnlockedProducts();
+            if (!isDepotUnlocked()) {
+                return unlocked;
+            }
+            return unlocked.filter(product => getProductStock(product.id) > 0);
+        }
+
+        function getVipChance() {
+            return Math.min(0.22, 0.03 + gameState.level * 0.004 + gameState.reputation * 0.002 + (gameState.weather.vipChance || 0));
+        }
+
+        function getComboBonus() {
+            return gameState.combo >= 3 ? gameState.combo * 4 : 0;
+        }
+
+        function syncProgressUnlocks(previousLevel = gameState.level) {
+            gameState.market.unlocked = gameState.level >= 11 || gameState.market.unlocked;
+            gameState.depot.unlocked = isDepotUnlocked();
+            gameState.depot.capacity = getDepotCapacity();
+            document.getElementById('open-market-btn').classList.toggle('show', gameState.market.unlocked);
+
+            if (previousLevel < 6 && gameState.level >= 6) {
+                showToast('📦 Gercek depo sistemi acildi.', 'success');
+            }
+
+            categoryUnlocks.forEach(category => {
+                if (previousLevel < category.level && gameState.level >= category.level) {
+                    showToast(`🆕 Yeni kategori acildi: ${category.name}`, 'success');
+                }
+            });
+
+            ensureDepotState();
+            renderDepot();
+        }
+
+        function getProductRequiredLevel(product) {
+            const premiumUnlock = gameState.energy >= 4 && product.unlockLevel >= 5 ? product.unlockLevel - 2 : product.unlockLevel;
+            return Math.max(1, premiumUnlock);
+        }
+
+        function getEnergyLevel() {
+            return gameState.energy;
+        }
+
+        function getEnergyXpBonus() {
+            return gameState.energy >= 2 ? 5 : 0;
+        }
+
+        function getEnergyTipBonus() {
+            return gameState.energy >= 6 && Math.random() < 0.35 ? 15 : 0;
+        }
+
+        function getEnergyMarketMultiplier() {
+            return gameState.energy >= 8 ? 1.25 : 1;
+        }
+
+        function getNextEnergyThreshold() {
+            const next = energyPerks.find(perk => perk.threshold > gameState.energy);
+            return next ? next.threshold : null;
+        }
+
+        function renderEnergyPanel() {
+            const energyLevel = getEnergyLevel();
+            const nextThreshold = getNextEnergyThreshold();
+            const energyBar = document.getElementById('energy-bar');
+            const energyStat = document.getElementById('energy-stat');
+            const energyLevelText = document.getElementById('energy-level');
+            const energyNext = document.getElementById('energy-next');
+            const energyCopy = document.getElementById('energy-copy');
+            const energyPerksContainer = document.getElementById('energy-perks');
+            const watchBtn = document.getElementById('watch-energy-ad-btn');
+
+            energyStat.textContent = energyLevel;
+            energyLevelText.textContent = energyLevel;
+            energyBar.style.width = `${Math.min(100, (energyLevel / MAX_ENERGY) * 100)}%`;
+            energyNext.textContent = nextThreshold ? `Sonraki eşik: ${nextThreshold}` : 'Tüm eşikler açıldı';
+            energyCopy.textContent = nextThreshold
+                ? `Enerji ${energyLevel}. Yeni avantaj için ${nextThreshold - energyLevel} reklam kaldı.`
+                : 'Enerji maksimum bölgede. Tüm bonuslar aktif.';
+            watchBtn.disabled = energyLevel >= MAX_ENERGY || (document.getElementById('ad-modal').classList.contains('active') && adContext === 'energy');
+            watchBtn.textContent = energyLevel >= MAX_ENERGY
+                ? 'Enerji Maksimumda'
+                : gameState.adsRemoved
+                    ? '+1 Enerji Kazan'
+                    : '+1 Enerji için Reklam İzle';
+
+            energyPerksContainer.innerHTML = '';
+            energyPerks.forEach(perk => {
+                const item = document.createElement('div');
+                item.className = `energy-perk ${energyLevel >= perk.threshold ? 'unlocked' : ''}`;
+                item.textContent = `${perk.threshold}. enerji: ${perk.name} - ${perk.desc}`;
+                energyPerksContainer.appendChild(item);
+            });
+        }
+
+        function increaseEnergy() {
+            if (gameState.energy >= MAX_ENERGY) {
+                showToast('Enerji zaten maksimumda.', 'success');
+                return;
+            }
+
+            gameState.energy = Math.min(MAX_ENERGY, gameState.energy + 1);
+            renderProducts();
+            renderEnergyPanel();
+            updateUI();
+            saveGame();
+            showToast(`⚡ Enerji arttı: ${gameState.energy}`, 'xp');
+        }
+
+        function getDailyTarget() {
+            return gameState.level <= 5 ? 10 : 12 + Math.max(0, gameState.level - 6);
+        }
+
+        function countItems(items) {
+            return items.reduce((counts, item) => {
+                counts[item.id] = (counts[item.id] || 0) + 1;
+                return counts;
+            }, {});
+        }
+
+        function isCartMatchingOrder() {
+            if (!gameState.currentCustomer) {
+                return false;
+            }
+
+            const cartCounts = countItems(gameState.cart);
+            const orderCounts = countItems(gameState.currentCustomer.order);
+            const keys = new Set([...Object.keys(cartCounts), ...Object.keys(orderCounts)]);
+
+            for (const key of keys) {
+                if ((cartCounts[key] || 0) !== (orderCounts[key] || 0)) {
+                    return false;
+                }
+            }
+
+            return gameState.cart.length === gameState.currentCustomer.order.length;
+        }
+
+        function summarizeItems(items) {
+            const grouped = items.reduce((map, item) => {
+                if (!map[item.id]) {
+                    map[item.id] = { ...item, quantity: 0 };
+                }
+                map[item.id].quantity += 1;
+                return map;
+            }, {});
+
+            return Object.values(grouped)
+                .map(item => `${item.icon} ${item.quantity}x ${item.name}`)
+                .join(', ');
+        }
+
+        function getOrderTotal(items) {
+            return items.reduce((sum, item) => sum + item.price, 0);
+        }
+
+        function ensureCustomer() {
+            if (!gameState.currentCustomer) {
+                generateCustomer();
+            } else {
+                updateCustomerDisplay();
+            }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            allProducts.forEach(product => {
+                const btn = document.createElement('button');
+                const isLocked = gameState.level < getProductRequiredLevel(product);
+                const stock = getProductStock(product.id);
+                const outOfStock = isDepotUnlocked() && !isLocked && stock <= 0;
+                btn.className = `product-btn ${isLocked ? 'locked' : ''}`;
+                btn.disabled = isLocked || outOfStock;
+                btn.innerHTML = `
+                    <span class="product-icon">${product.icon}</span>
+                    <span class="product-name">${product.name}</span>
+                    <span class="product-price">${formatMoney(product.price)}${getProductRequiredLevel(product) < product.unlockLevel ? ' ⚡' : ''}${outOfStock ? ' • Stok yok' : isDepotUnlocked() && !isLocked ? ` • ${stock} adet` : ''}</span>
+                `;
+                btn.addEventListener('click', () => addToCart(product));
+                grid.appendChild(btn);
+            });
+        }
+
+        function renderDepot() {
+            const panel = document.getElementById('stock-panel');
+            const list = document.getElementById('stock-list');
+            const capacity = document.getElementById('stock-capacity');
+            const copy = document.getElementById('stock-copy');
+
+            panel.classList.toggle('hidden', !isDepotUnlocked());
+            if (!isDepotUnlocked()) {
+                return;
+            }
+
+            capacity.textContent = `${getCurrentDepotLoad()} / ${getDepotCapacity()}`;
+            copy.textContent = 'Seviye 6 sonrasi stok gercekten tukenir. Musteri siparisleri depodaki urunlerle sinirlidir.';
+            list.innerHTML = '';
+
+            getUnlockedProducts().forEach(product => {
+                const restockAmount = product.unlockLevel >= 11 ? 3 : 5;
+                const restockCost = Math.ceil(product.price * restockAmount * 0.65);
+                const canRestock = getDepotAvailableSpace() >= restockAmount && gameState.money >= restockCost;
+                const row = document.createElement('div');
+                row.className = 'stock-item';
+                row.innerHTML = `
+                    <div class="stock-item-name">${product.icon} ${product.name}</div>
+                    <div class="stock-item-count">${getProductStock(product.id)} adet</div>
+                    <button class="stock-restock-btn" ${!canRestock ? 'disabled' : ''} onclick="restockProduct(${product.id})">+${restockAmount} (${formatMoney(restockCost)})</button>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function openWholesaleOrderModal() {
+            if (!isDepotUnlocked()) {
+                showToast('Toplu siparis icin once depo acilmali.', 'error');
+                return;
+            }
+
+            wholesaleDraft = {};
+            const grid = document.getElementById('stock-order-grid');
+            grid.innerHTML = '';
+
+            getUnlockedProducts().forEach(product => {
+                wholesaleDraft[product.id] = 0;
+                const unitCost = getWholesaleUnitCost(product);
+                const row = document.createElement('div');
+                row.className = 'stock-order-row';
+                row.innerHTML = `
+                    <div>
+                        <div class="stock-item-name">${product.icon} ${product.name}</div>
+                        <div class="stock-order-meta">Birim maliyet ${formatMoney(unitCost)} • Mevcut ${getProductStock(product.id)} adet</div>
+                    </div>
+                    <input class="stock-qty-input" type="number" min="0" max="20" value="0" data-product-id="${product.id}">
+                    <div class="stock-item-count" id="order-line-${product.id}">${formatMoney(0)}</div>
+                `;
+                grid.appendChild(row);
+            });
+
+            grid.querySelectorAll('.stock-qty-input').forEach(input => {
+                input.addEventListener('input', event => {
+                    const productId = Number(event.target.dataset.productId);
+                    const product = allProducts.find(item => item.id === productId);
+                    const qty = Math.max(0, Math.min(20, Number(event.target.value) || 0));
+                    event.target.value = qty;
+                    wholesaleDraft[productId] = qty;
+                    document.getElementById(`order-line-${productId}`).textContent = formatMoney(qty * getWholesaleUnitCost(product));
+                    updateWholesaleSummary();
+                });
+            });
+
+            updateWholesaleSummary();
+            document.getElementById('order-modal').classList.add('active');
+        }
+
+        function closeWholesaleOrderModal() {
+            document.getElementById('order-modal').classList.remove('active');
+        }
+
+        function getWholesaleDraftTotals() {
+            let quantity = 0;
+            let cost = 0;
+            Object.entries(wholesaleDraft).forEach(([productId, qty]) => {
+                if (!qty) {
+                    return;
+                }
+                const product = allProducts.find(item => item.id === Number(productId));
+                quantity += qty;
+                cost += qty * getWholesaleUnitCost(product);
+            });
+            return { quantity, cost };
+        }
+
+        function updateWholesaleSummary() {
+            const { quantity, cost } = getWholesaleDraftTotals();
+            const freeSpace = getDepotAvailableSpace();
+            document.getElementById('order-summary').textContent = `${quantity} ürün • ${formatMoney(cost)} • Boş alan ${freeSpace}`;
+        }
+
+        function confirmWholesaleOrder() {
+            const { quantity, cost } = getWholesaleDraftTotals();
+            if (quantity === 0) {
+                showToast('Once siparis miktari gir.', 'error');
+                return;
+            }
+            if (quantity > getDepotAvailableSpace()) {
+                showToast('Depoda bu siparis icin yeterli alan yok.', 'error');
+                return;
+            }
+            if (cost > gameState.money) {
+                showToast('Toplu siparis icin bakiye yetmiyor.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            Object.entries(wholesaleDraft).forEach(([productId, qty]) => {
+                if (qty > 0) {
+                    gameState.depot.items[productId] = getProductStock(Number(productId)) + qty;
+                }
+            });
+
+            if (gameState.currentCustomer && gameState.currentCustomer.order && gameState.currentCustomer.order.length === 0) {
+                gameState.currentCustomer = null;
+                ensureCustomer();
+            }
+
+            closeWholesaleOrderModal();
+            renderDepot();
+            renderProducts();
+            updateUI();
+            saveGame();
+            showToast('Toplu siparis depoya eklendi.', 'success');
+        }
+
+        function quickRestockDepot() {
+            if (!isDepotUnlocked()) {
+                showToast('Hizli doldur icin depo gerekli.', 'error');
+                return;
+            }
+
+            let spent = 0;
+            getUnlockedProducts().forEach(product => {
+                const target = product.unlockLevel >= 11 ? 4 : 6;
+                const missing = Math.max(0, target - getProductStock(product.id));
+                const qty = Math.min(missing, getDepotAvailableSpace());
+                const cost = qty * getWholesaleUnitCost(product);
+                if (qty > 0 && cost <= gameState.money - spent && qty <= getDepotAvailableSpace()) {
+                    gameState.depot.items[product.id] = getProductStock(product.id) + qty;
+                    spent += cost;
+                }
+            });
+
+            if (spent === 0) {
+                showToast('Hizli doldur icin uygun kosul yok.', 'error');
+                return;
+            }
+
+            gameState.money -= spent;
+            if (gameState.currentCustomer && gameState.currentCustomer.order && gameState.currentCustomer.order.length === 0) {
+                gameState.currentCustomer = null;
+                ensureCustomer();
+            }
+            renderDepot();
+            renderProducts();
+            updateUI();
+            saveGame();
+            showToast(`Depo hizli dolduruldu. -${formatMoney(spent)}`, 'success');
+        }
+
+        function renderQuests() {
+            const list = document.getElementById('quests-list');
+            list.innerHTML = '';
+
+            quests.forEach(quest => {
+                const completed = gameState.completedQuestIds.includes(quest.id);
+                const isLocked = gameState.level < quest.reqLevel;
+                const progress = getQuestProgress(quest);
+                const div = document.createElement('div');
+                div.className = `quest-item ${completed ? 'completed' : ''} ${isLocked ? 'locked' : progress > 0 ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div class="quest-name">${quest.name}</div>
+                    <div class="quest-desc">${quest.desc}</div>
+                    ${!isLocked ? `
+                        <div class="quest-progress">
+                            <div class="quest-progress-fill" style="width: ${Math.min(100, (progress / quest.target) * 100)}%"></div>
+                        </div>
+                        <div class="quest-reward">${completed ? 'Tamamlandı' : `Ödül: ${formatMoney(quest.reward)}`}</div>
+                    ` : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function getQuestProgress(quest) {
+            switch (quest.type) {
+                case 'customers':
+                    return gameState.customersServed;
+                case 'bigOrder':
+                    return gameState.lastOrderTotal;
+                case 'perfect':
+                    return gameState.perfectStreak;
+                default:
+                    return 0;
+            }
+        }
+
+        function checkQuests() {
+            quests.forEach(quest => {
+                const completed = gameState.completedQuestIds.includes(quest.id);
+                if (completed || gameState.level < quest.reqLevel) {
+                    return;
+                }
+
+                if (getQuestProgress(quest) >= quest.target) {
+                    gameState.completedQuestIds.push(quest.id);
+                    gameState.money += quest.reward;
+                    showToast(`🎉 ${quest.name} tamamlandı (+${formatMoney(quest.reward)})`, 'success');
+                }
+            });
+
+            renderQuests();
+        }
+
+        function generateCustomer() {
+            const availableProducts = getAvailableCustomerProducts();
+            if (!availableProducts.length) {
+                gameState.currentCustomer = {
+                    name: 'Depo Bos',
+                    look: customerLooks[0],
+                    order: [],
+                    vip: false
+                };
+                document.getElementById('customer-avatar').innerHTML = renderCustomerFace(customerLooks[0]);
+                document.getElementById('customer-name').textContent = 'Depo Bos • Musteri bekliyor';
+                document.getElementById('customer-order').textContent = 'Depoyu doldur, sonra yeni musteri gelecek.';
+                document.getElementById('customer-status').innerHTML = '<span class="status-pill">Depo bekleniyor</span>';
+                return;
+            }
+
+            const minimumItems = gameState.level >= 6 ? 2 : 1;
+            const maximumItems = Math.min(7, 3 + Math.floor(gameState.level / 3) + (gameState.weather.extraItems || 0));
+            const numItems = Math.floor(Math.random() * (maximumItems - minimumItems + 1)) + minimumItems;
+            const order = [];
+            const vip = Math.random() < getVipChance();
+            const look = customerLooks[Math.floor(Math.random() * customerLooks.length)];
+            const namePool = look.gender === 'female' ? femaleCustomerNames : maleCustomerNames;
+
+            for (let i = 0; i < numItems; i++) {
+                const product = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+                order.push(product);
+            }
+
+            if (vip && availableProducts.length) {
+                order.push(availableProducts[Math.floor(Math.random() * availableProducts.length)]);
+                if (gameState.level >= 10) {
+                    order.push(availableProducts[Math.floor(Math.random() * availableProducts.length)]);
+                }
+            }
+
+            gameState.currentCustomer = {
+                name: `${vip ? 'VIP ' : ''}${namePool[Math.floor(Math.random() * namePool.length)]}`,
+                look,
+                order,
+                vip
+            };
+            gameState.orderStartedAt = Date.now();
+            const customerArea = document.getElementById('customer-area');
+            customerArea.classList.remove('is-arriving');
+            void customerArea.offsetWidth;
+            customerArea.classList.add('is-arriving');
+            setTimeout(() => customerArea.classList.remove('is-arriving'), 900);
+            updateCustomerDisplay();
+        }
+
+        function renderCustomerFace(look) {
+            return `
+                <div class="customer-card-bg" style="--shirt-color:${look.shirt}"></div>
+                <div class="customer-arm left" style="--skin-color:${look.skin}"></div>
+                <div class="customer-arm right" style="--skin-color:${look.skin}"></div>
+                <div class="customer-leg left" style="--skin-color:${look.skin}"></div>
+                <div class="customer-leg right" style="--skin-color:${look.skin}"></div>
+                <div class="customer-shirt" style="--shirt-color:${look.shirt}"></div>
+                <div class="customer-face" style="--skin-color:${look.skin}; --hair-color:${look.hair}; --shirt-color:${look.shirt}">
+                    <div class="customer-hair ${look.hairStyle}"></div>
+                    ${look.lashes ? '<div class="customer-lashes"></div>' : ''}
+                    <div class="customer-eye left"></div>
+                    <div class="customer-eye right"></div>
+                    ${look.glasses ? '<div class="customer-glasses"></div>' : ''}
+                    ${look.mustache ? '<div class="customer-mustache"></div>' : ''}
+                    ${look.beard ? '<div class="customer-beard"></div>' : ''}
+                    ${look.earrings ? '<div class="customer-earring left"></div><div class="customer-earring right"></div>' : ''}
+                    <div class="customer-mouth"></div>
+                </div>
+            `;
+        }
+
+        function updateCustomerDisplay() {
+            const customer = gameState.currentCustomer;
+            document.getElementById('customer-avatar').innerHTML = renderCustomerFace(customer.look);
+            document.getElementById('customer-name').textContent = `${customer.name} • Gün ${gameState.day}`;
+            document.getElementById('customer-order').textContent = `${summarizeItems(customer.order)} • Hedef ${gameState.customersToday}/${getDailyTarget()} • Enerji ${gameState.energy}`;
+            document.getElementById('customer-status').innerHTML = `
+                <span class="status-pill">Hava: ${gameState.weather.name}</span>
+                <span class="status-pill">Itibar: ${gameState.reputation}</span>
+                <span class="status-pill">Kombo: ${gameState.combo}</span>
+                ${customer.vip ? '<span class="status-pill">VIP Musteri</span>' : ''}
+            `;
+        }
+
+        function addToCart(product) {
+            if (isDepotUnlocked() && getCartCountForProduct(product.id) >= getProductStock(product.id)) {
+                showToast('Depoda bu urunden daha fazla yok.', 'error');
+                return;
+            }
+            gameState.cart.push(product);
+            renderCart();
+        }
+
+        function restockProduct(productId) {
+            const product = allProducts.find(item => item.id === productId);
+            const amount = product.unlockLevel >= 11 ? 3 : 5;
+            const cost = Math.ceil(product.price * amount * 0.65);
+
+            if (getDepotAvailableSpace() < amount) {
+                showToast('Depoda yeterli alan yok.', 'error');
+                return;
+            }
+            if (gameState.money < cost) {
+                showToast('Stok yenilemek icin para yetmiyor.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            gameState.depot.items[productId] = getProductStock(productId) + amount;
+            if (gameState.currentCustomer && gameState.currentCustomer.order && gameState.currentCustomer.order.length === 0) {
+                gameState.currentCustomer = null;
+                ensureCustomer();
+            }
+            renderDepot();
+            renderProducts();
+            updateUI();
+            saveGame();
+            showToast(`${product.name} stogu yenilendi.`, 'success');
+        }
+
+        function removeFromCart(index) {
+            gameState.cart.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            const total = getOrderTotal(gameState.cart);
+
+            gameState.cart.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    <span class="cart-item-name">${item.icon} ${item.name}</span>
+                    <span class="cart-item-price">${formatMoney(item.price)}
+                        <button class="remove-btn" onclick="removeFromCart(${index})">×</button>
+                    </span>
+                `;
+                container.appendChild(div);
+            });
+
+            if (!gameState.cart.length) {
+                container.innerHTML = `<div class="cart-item"><span class="cart-item-name">Sepet boş</span><span class="cart-item-price">${formatMoney(0)}</span></div>`;
+            }
+
+            document.getElementById('register-screen').textContent = formatMoney(total);
+            document.getElementById('btn-pay').disabled = total === 0;
+        }
+
+        function buildPaymentOptions(total) {
+            const rounded = [
+                total,
+                Math.ceil(total / 5) * 5,
+                Math.ceil(total / 10) * 10,
+                Math.ceil(total / 20) * 20,
+                Math.ceil(total / 50) * 50,
+                Math.ceil(total / 100) * 100,
+                Math.ceil(total / 200) * 200
+            ];
+
+            return [...new Set(rounded)].filter(value => value >= total).slice(0, 6);
+        }
+
+        function openPaymentModal() {
+            if (!isCartMatchingOrder()) {
+                showToast('Sepet siparişle birebir eşleşmeli.', 'error');
+                return;
+            }
+
+            paymentTotal = getOrderTotal(gameState.cart);
+            selectedAmount = 0;
+            document.getElementById('payment-total').textContent = formatMoney(paymentTotal);
+            document.getElementById('payment-modal').classList.add('active');
+
+            const moneyOptions = document.getElementById('money-options');
+            moneyOptions.innerHTML = '';
+
+            buildPaymentOptions(paymentTotal).forEach(value => {
+                const btn = document.createElement('button');
+                btn.className = 'money-btn';
+                btn.textContent = value === paymentTotal ? 'Tamı' : formatMoney(value);
+                btn.dataset.amount = String(value);
+                btn.addEventListener('click', () => selectMoney(value));
+                moneyOptions.appendChild(btn);
+            });
+        }
+
+        function selectMoney(amount) {
+            selectedAmount = amount;
+            document.querySelectorAll('.money-btn').forEach(btn => {
+                btn.classList.toggle('selected', Number(btn.dataset.amount) === amount);
+            });
+        }
+
+        function processPayment() {
+            if (!isCartMatchingOrder()) {
+                gameState.perfectStreak = 0;
+                gameState.combo = 0;
+                gameState.reputation = Math.max(0, gameState.reputation - 1);
+                document.getElementById('payment-modal').classList.remove('active');
+                showToast('Yanlış ürünler seçildi. Sipariş sıfırlandı.', 'error');
+                clearCart(false);
+                saveGame();
+                return;
+            }
+
+            if (selectedAmount < paymentTotal) {
+                showToast('Önce ödeme tutarını seç.', 'error');
+                return;
+            }
+
+            const change = selectedAmount - paymentTotal;
+            const transactionDuration = gameState.orderStartedAt ? Date.now() - gameState.orderStartedAt : null;
+
+            gameState.money += paymentTotal;
+            gameState.customersServed += 1;
+            gameState.customersToday += 1;
+            gameState.perfectStreak += 1;
+            gameState.lastOrderTotal = paymentTotal;
+            gameState.combo += 1;
+            gameState.reputation = Math.min(99, gameState.reputation + (gameState.currentCustomer.vip ? 2 : 1));
+            if (isDepotUnlocked()) {
+                gameState.cart.forEach(item => {
+                    gameState.depot.items[item.id] = Math.max(0, getProductStock(item.id) - 1);
+                });
+            }
+
+            if (transactionDuration !== null) {
+                if (gameState.fastestTransactionMs === null || transactionDuration < gameState.fastestTransactionMs) {
+                    gameState.fastestTransactionMs = transactionDuration;
+                }
+            }
+
+            const tipBonus = getEnergyTipBonus();
+            const comboBonus = getComboBonus();
+            const vipBonus = gameState.currentCustomer.vip ? Math.floor(paymentTotal * 0.12) : 0;
+            const xpGain = Math.floor(paymentTotal / 5) + 10 + (change === 0 ? 10 : 0) + getEnergyXpBonus() + Math.min(20, gameState.combo);
+            gainXP(xpGain);
+            if (comboBonus > 0) {
+                gameState.money += comboBonus;
+                showToast(`🔥 Kombo bonusu: +${formatMoney(comboBonus)}`, 'success');
+            }
+            if (vipBonus > 0) {
+                gameState.money += vipBonus;
+                showToast(`👑 VIP satis bonusu: +${formatMoney(vipBonus)}`, 'success');
+            }
+            if (tipBonus > 0) {
+                gameState.money += tipBonus;
+                showToast(`⚡ Enerji bonusu: +${formatMoney(tipBonus)} bahşiş`, 'success');
+            }
+
+            if (change > 0) {
+                showToast(`💵 Para üstü: ${formatMoney(change)}`, 'success');
+            } else {
+                showToast('Hatasız tahsilat! +10 bonus XP', 'xp');
+            }
+
+            if (gameState.customersToday >= getDailyTarget()) {
+                finishDay();
+            }
+
+            checkQuests();
+            gameState.cart = [];
+            gameState.currentCustomer = null;
+            document.getElementById('payment-modal').classList.remove('active');
+            renderCart();
+            renderDepot();
+            renderProducts();
+            ensureCustomer();
+            updateUI();
+            saveGame();
+        }
+
+        function finishDay() {
+            const dailyBonus = 75 + (gameState.day - 1) * 10;
+            gameState.money += dailyBonus;
+            gameState.day += 1;
+            gameState.customersToday = 0;
+            gameState.combo = 0;
+            gameState.market.cleanliness = Math.max(35, gameState.market.cleanliness - (12 - Math.min(8, gameState.market.cleaners * 4)));
+            gameState.reputation = Math.max(0, gameState.reputation - (gameState.market.cleanliness < 55 ? 2 : 0));
+            rollDailyWeather();
+            showToast(`🌅 Gün tamamlandı! Günlük bonus +${formatMoney(dailyBonus)}`, 'success');
+        }
+
+        function gainXP(amount) {
+            gameState.xp += amount;
+
+            while (gameState.xp >= gameState.xpToNextLevel) {
+                gameState.xp -= gameState.xpToNextLevel;
+                levelUp();
+            }
+        }
+
+        function levelUp() {
+            const previousLevel = gameState.level;
+            gameState.level += 1;
+            gameState.xpToNextLevel = Math.floor(gameState.xpToNextLevel * 1.35);
+            document.getElementById('new-level').textContent = gameState.level;
+            document.getElementById('level-up-notification').classList.add('show');
+
+            setTimeout(() => {
+                document.getElementById('level-up-notification').classList.remove('show');
+            }, 2500);
+
+            if (gameState.level === 11) {
+                gameState.market.unlocked = true;
+                showToast('🏪 Kendi marketin acildi!', 'success');
+            }
+
+            syncProgressUnlocks(previousLevel);
+            renderProducts();
+            renderDepot();
+            renderEnergyPanel();
+            renderQuests();
+        }
+
+        function calculatePassiveIncome() {
+            const workforce = Math.max(1, gameState.market.cashiers + gameState.market.employees);
+            const stockerBoost = 1 + gameState.market.stockers * 0.08;
+            const cleanerBoost = getCleanlinessMultiplier();
+            const baseIncome = workforce * gameState.market.level * gameState.market.size * 12;
+            return Math.floor(baseIncome * stockerBoost * cleanerBoost * gameState.market.incomeMultiplier * gameState.market.efficiencyMultiplier * getEnergyMarketMultiplier());
+        }
+
+        function updateUI() {
+            document.getElementById('money').textContent = gameState.money;
+            document.getElementById('customers').textContent = gameState.customersServed;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('xp-bar').style.width = `${(gameState.xp / gameState.xpToNextLevel) * 100}%`;
+
+            if (gameState.currentCustomer) {
+                updateCustomerDisplay();
+            }
+
+            document.getElementById('market-income').textContent = formatMoney(gameState.market.income);
+            document.getElementById('market-level').textContent = gameState.market.level;
+            document.getElementById('market-size').textContent = getMarketSizeLabel();
+            document.getElementById('market-employees').textContent = gameState.market.cashiers + gameState.market.cleaners + gameState.market.stockers + gameState.market.employees;
+            document.getElementById('market-cleanliness').textContent = `${gameState.market.cleanliness}%`;
+            document.getElementById('market-products').textContent = gameState.market.productCount;
+            document.getElementById('hire-employee').textContent = `+ Çalışan Al (${formatMoney(500 + gameState.market.employees * 150)})`;
+            document.getElementById('hire-cashier-btn').textContent = `İşe Al (${formatMoney(getStaffHireCost('cashier'))})`;
+            document.getElementById('hire-cleaner-btn').textContent = `İşe Al (${formatMoney(getStaffHireCost('cleaner'))})`;
+            document.getElementById('hire-stocker-btn').textContent = `İşe Al (${formatMoney(getStaffHireCost('stocker'))})`;
+            document.getElementById('cashier-count').textContent = gameState.market.cashiers;
+            document.getElementById('cleaner-count').textContent = gameState.market.cleaners;
+            document.getElementById('stocker-count').textContent = gameState.market.stockers;
+            document.getElementById('toggle-auto-restock').textContent = `Oto Tedarik: ${gameState.market.autoRestock ? 'Açık' : 'Kapalı'}`;
+            document.getElementById('expand-market-btn').textContent = `Marketi Büyüt (${formatMoney(getMarketExpansionCost())})`;
+            document.getElementById('cleanliness-value').textContent = `${gameState.market.cleanliness}%`;
+            document.getElementById('cleanliness-bar').style.width = `${gameState.market.cleanliness}%`;
+            document.getElementById('cleanliness-copy').textContent = gameState.market.cleanliness >= 75
+                ? 'Market tertemiz. Gelir bonusu aktif.'
+                : gameState.market.cleanliness >= 50
+                    ? 'Temizlik orta seviyede. Daha iyi itibar için temizleyebilirsin.'
+                    : 'Market kirlenmiş. Itibar ve gelir düşmeye başlar.';
+            document.getElementById('clean-market-btn').textContent = `Marketi Temizle (${formatMoney(getCleanMarketCost())})`;
+            syncAdsUI();
+            renderDepot();
+            renderEnergyPanel();
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function clearCart(resetStreak = true) {
+            gameState.cart = [];
+            if (resetStreak) {
+                gameState.perfectStreak = 0;
+            }
+            renderCart();
+            saveGame();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('btn-collect').addEventListener('click', openPaymentModal);
+            document.getElementById('btn-clear').addEventListener('click', () => clearCart());
+            document.getElementById('btn-pay').addEventListener('click', openPaymentModal);
+            document.getElementById('btn-cancel-payment').addEventListener('click', () => {
+                document.getElementById('payment-modal').classList.remove('active');
+            });
+            document.getElementById('btn-confirm-payment').addEventListener('click', processPayment);
+            document.getElementById('open-market-btn').addEventListener('click', () => {
+                document.getElementById('own-market-panel').classList.add('active');
+                renderMarketUpgrades();
+            });
+            document.getElementById('close-market').addEventListener('click', () => {
+                document.getElementById('own-market-panel').classList.remove('active');
+            });
+            document.getElementById('hire-employee').addEventListener('click', hireEmployee);
+            document.getElementById('hire-cashier-btn').addEventListener('click', () => hireStaff('cashier'));
+            document.getElementById('hire-cleaner-btn').addEventListener('click', () => hireStaff('cleaner'));
+            document.getElementById('hire-stocker-btn').addEventListener('click', () => hireStaff('stocker'));
+            document.getElementById('clean-market-btn').addEventListener('click', cleanMarket);
+            document.getElementById('expand-market-btn').addEventListener('click', expandMarket);
+            document.getElementById('toggle-auto-restock').addEventListener('click', toggleAutoRestock);
+            document.getElementById('remove-ads-btn').addEventListener('click', buyAdRemoval);
+            document.getElementById('buy-no-ads-btn').addEventListener('click', buyAdRemoval);
+            document.getElementById('close-ad-btn').addEventListener('click', closeAdvertisement);
+            document.getElementById('show-ad-now-btn').addEventListener('click', () => showAdvertisement('default'));
+            document.getElementById('watch-energy-ad-btn').addEventListener('click', () => {
+                if (gameState.adsRemoved) {
+                    increaseEnergy();
+                    return;
+                }
+                showAdvertisement('energy');
+            });
+            document.getElementById('open-order-modal').addEventListener('click', openWholesaleOrderModal);
+            document.getElementById('quick-restock-btn').addEventListener('click', quickRestockDepot);
+            document.getElementById('cancel-order-modal').addEventListener('click', closeWholesaleOrderModal);
+            document.getElementById('confirm-order-modal').addEventListener('click', confirmWholesaleOrder);
+        }
+
+        function renderMarketUpgrades() {
+            const container = document.getElementById('market-upgrades');
+            container.innerHTML = '';
+
+            marketUpgrades.forEach(upgrade => {
+                const purchasedCount = gameState.market.purchasedUpgrades.filter(id => id === upgrade.id).length;
+                const purchased = purchasedCount > 0 && !upgrade.repeatable;
+                const nextCost = upgrade.cost + (upgrade.repeatable ? purchasedCount * 140 : 0);
+                const canAfford = gameState.money >= nextCost && !purchased;
+                const div = document.createElement('div');
+                div.className = 'upgrade-item';
+                div.innerHTML = `
+                    <div class="upgrade-info">
+                        <h4>${upgrade.name}${purchasedCount ? ` x${purchasedCount}` : ''}</h4>
+                        <p>${upgrade.desc}</p>
+                    </div>
+                    <button class="upgrade-btn" ${!canAfford ? 'disabled' : ''} onclick="buyUpgrade(${upgrade.id})">
+                        ${purchased ? 'Alındı' : `${formatMoney(nextCost)}`}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buyUpgrade(upgradeId) {
+            const upgrade = marketUpgrades.find(item => item.id === upgradeId);
+            const purchasedCount = gameState.market.purchasedUpgrades.filter(id => id === upgrade.id).length;
+            if (purchasedCount > 0 && !upgrade.repeatable) {
+                return;
+            }
+
+            const cost = upgrade.cost + (upgrade.repeatable ? purchasedCount * 140 : 0);
+            if (gameState.money < cost) {
+                showToast('Bu geliştirme için para yetmiyor.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            gameState.market.purchasedUpgrades.push(upgrade.id);
+
+            switch (upgrade.type) {
+                case 'products':
+                    gameState.market.productCount += upgrade.effect;
+                    break;
+                case 'income':
+                    gameState.market.incomeMultiplier = Number((gameState.market.incomeMultiplier * upgrade.effect).toFixed(2));
+                    break;
+                case 'efficiency':
+                    gameState.market.efficiencyMultiplier = Number((gameState.market.efficiencyMultiplier * upgrade.effect).toFixed(2));
+                    break;
+                case 'marketLevel':
+                    gameState.market.level += upgrade.effect;
+                    break;
+            }
+
+            gameState.market.income = calculatePassiveIncome();
+            showToast(`${upgrade.name} satın alındı.`, 'success');
+            updateUI();
+            renderMarketUpgrades();
+            saveGame();
+        }
+
+        function hireEmployee() {
+            const cost = 500 + gameState.market.employees * 150;
+            if (gameState.money < cost) {
+                showToast('Yeterli bakiyen yok.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            gameState.market.employees += 1;
+            gameState.market.income = calculatePassiveIncome();
+            showToast('Yeni kasiyer işe alındı.', 'success');
+            updateUI();
+            renderMarketUpgrades();
+            saveGame();
+        }
+
+        function hireStaff(type) {
+            if (!gameState.market.unlocked) {
+                showToast('Önce marketini aç.', 'error');
+                return;
+            }
+
+            const cost = getStaffHireCost(type);
+            if (gameState.money < cost) {
+                showToast('Bu çalışan için bakiye yetmiyor.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            if (type === 'cashier') {
+                gameState.market.cashiers += 1;
+            } else if (type === 'cleaner') {
+                gameState.market.cleaners += 1;
+                gameState.market.cleanliness = Math.min(100, gameState.market.cleanliness + 8);
+            } else if (type === 'stocker') {
+                gameState.market.stockers += 1;
+                gameState.market.productCount += 2;
+            }
+
+            gameState.market.income = calculatePassiveIncome();
+            updateUI();
+            saveGame();
+            showToast('Yeni çalışan işe alındı.', 'success');
+        }
+
+        function cleanMarket() {
+            if (!gameState.market.unlocked) {
+                showToast('Önce marketini aç.', 'error');
+                return;
+            }
+
+            const cost = getCleanMarketCost();
+            if (gameState.money < cost) {
+                showToast('Temizlik için bakiye yetmiyor.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            gameState.market.cleanliness = 100;
+            gameState.reputation = Math.min(99, gameState.reputation + 2);
+            gameState.market.income = calculatePassiveIncome();
+            updateUI();
+            saveGame();
+            showToast('Market temizlendi, itibar arttı.', 'success');
+        }
+
+        function expandMarket() {
+            if (!gameState.market.unlocked) {
+                showToast('Marketi büyütmek için önce marketini aç.', 'error');
+                return;
+            }
+
+            const cost = getMarketExpansionCost();
+            if (gameState.money < cost) {
+                showToast('Market büyütme için bakiye yetmiyor.', 'error');
+                return;
+            }
+
+            gameState.money -= cost;
+            gameState.market.size += 1;
+            gameState.market.productCount += 4;
+            gameState.market.income = calculatePassiveIncome();
+            updateUI();
+            renderMarketUpgrades();
+            saveGame();
+            showToast(`Market boyutu ${getMarketSizeLabel()} oldu.`, 'success');
+        }
+
+        function toggleAutoRestock() {
+            if (!gameState.market.unlocked) {
+                showToast('Oto tedarik icin once marketini ac.', 'error');
+                return;
+            }
+
+            gameState.market.autoRestock = !gameState.market.autoRestock;
+            updateUI();
+            saveGame();
+            showToast(`Oto tedarik ${gameState.market.autoRestock ? 'acildi' : 'kapatildi'}.`, 'success');
+        }
+
+        function autoRestockDepot() {
+            const lowStockProducts = getUnlockedProducts().filter(product => getProductStock(product.id) <= 2);
+            lowStockProducts.forEach(product => {
+                const amount = (product.unlockLevel >= 11 ? 3 : 5) + gameState.market.stockers;
+                const cost = Math.ceil(product.price * amount * 0.65);
+                if (getDepotAvailableSpace() >= amount && gameState.money >= cost) {
+                    gameState.money -= cost;
+                    gameState.depot.items[product.id] = getProductStock(product.id) + amount;
+                }
+            });
+            renderDepot();
+            renderProducts();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
